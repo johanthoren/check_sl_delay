@@ -1,0 +1,18 @@
+language: python
+python:
+- 3.8
+- 3.7
+- 3.6
+install: make
+script:
+- make test
+deploy:
+  provider: pypi
+  distributions: sdist bdist_wheel
+  user: johanthoren
+  password:
+    secure: kAzFOVOAm2XgSnmZbuv5Z13OTCO2OhAPslTnoJruIb7jxQyCNAWFCv5eXIV3rfSnpBDog+L4wBPPwnHq0rpMgMBaUE/vaIj+2TjCWYs5xm1n3+5pyczTnZi3kT6JxT1GLrxfUri2+h6k9Cdk8D9lqs7H8282leLmFMnUZubJfBcPM+PdaCxTXO3F9GZ8a134foexQdVwq+AQfV4+K6uKaCq5cEmGvssDzB17aoznQ6SyAxQ2I2ghQNMJ2RgvIX1KbVjHFclQylxSpLQNhNECrFiGPClNHq+6ryB+FTy+zAuH+eY0luoe0VvluEEinnF7Yy8E6gwdpqL4F9p/Fa6YFk1w/I6PcYgYt2UqQOGz0PW5Yp9vEODoijIcyKMsu1dqZATrp2wEakcdXMT1sHf9Prf3DG47TDzzZOEEuS5t5TI6nAMmDekxmU+gd3rupd1UIPM+S0sdcs8g4OqrWS28ZbSpKpVNlgEq1mnEkiSomBHvm5YTsfzQ9q+0Xz0HgOYtdH+K2tkizMvyBG4n359ne3pHLamFW59AG2LfZqf6op3qq0QvZCVn9isUmIsn5JgtxEmFthxt1y1z4Dbq+00RvqiLARtkojK2RyVFbStUpS+yHpAwSGReR6gvg35gM9j9jiJ/SDIv6fO5Xk6vYHf1XL3eCXsXUB/1nQ/0QwpdYWw=
+  on:
+    tags: true
+    repo: johanthoren/check_sl_delay
+    python: 3.8

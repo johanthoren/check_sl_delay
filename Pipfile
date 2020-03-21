@@ -5,16 +5,19 @@ name = "pypi"
 
 [packages]
 requests = "*"
-py-dateutil = "*"
 click = "*"
+func-timeout = "*"
+
+[dev-packages]
 pytest-runner = "*"
 pytest = "*"
 pylint = "*"
 yapf = "*"
 importmagic = "*"
-func-timeout = "*"
-
-[dev-packages]
 
 [requires]
-python_version = "3.7"
+python_version = "3.6"
+
+[dev-packages.e1839a8]
+path = "."
+editable = true
