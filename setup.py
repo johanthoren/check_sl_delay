@@ -10,11 +10,11 @@ with open('README.md') as readme_file:
 with open('HISTORY.md') as history_file:
     HISTORY = history_file.read()
 
-# requirements = ['requests>=2.23', 'Click>=7.1', ]
+requirements = ['requests>=2.23', 'Click>=7.1', 'func-timeout>=4.3', ]
 
-# setup_requirements = ['pytest-runner', ]
+setup_requirements = ['pytest-runner', ]
 
-# test_requirements = ['pytest>=3', ]
+test_requirements = ['pytest>=3', ]
 
 setup(
     author="Johan Thorén",
@@ -35,17 +35,17 @@ setup(
         [console_scripts]
         check_sl_delay=check_sl_delay.check_sl_delay:cli
     ''',
-    #install_requires=requirements,
+    install_requires=requirements,
     license="ISC license",
     long_description_content_type="text/markdown",
     long_description=README + '\n\n' + HISTORY,
     include_package_data=True,
     keywords='check_sl_delay',
     name='check_sl_delay',
-    packages=find_packages(include=['check_sl_delay.check_sl_delay.py']),
-    #setup_requires=setup_requirements,
+    packages=find_packages(include=['check_sl_delay.py']),
+    setup_requires=setup_requirements,
     test_suite='tests',
-    #tests_require=test_requirements,
-    version='0.1.0-alpha.4',
+    tests_require=test_requirements,
+    version='0.1.0-alpha.6',
     zip_safe=False,
 )
