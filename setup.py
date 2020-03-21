@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 with open('README.md') as readme_file:
     README = readme_file.read()
 
-with open('HISTORY.rst') as history_file:
+with open('HISTORY.md') as history_file:
     HISTORY = history_file.read()
 
 # requirements = ['requests>=2.23', 'Click>=7.1', ]
@@ -30,13 +30,14 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
-    description="Nagios plugin to check SL delays for a given site.",
+    description="Nagios plugin to check SL delays for a given site",
     entry_points='''
         [console_scripts]
         check_sl_delay=check_sl_delay.check_sl_delay:cli
     ''',
     #install_requires=requirements,
     license="ISC license",
+    long_description_content_type="text/markdown",
     long_description=README + '\n\n' + HISTORY,
     include_package_data=True,
     keywords='check_sl_delay',
