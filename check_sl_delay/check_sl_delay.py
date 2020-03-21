@@ -186,6 +186,8 @@ def determine_state(value, warning='', critical=''):
 
 def plugin_main(site_id, period, traffic_type_api_format, minutes, warning,
                 critical):
+    """Main function that will execute the actual API call and decide the
+    state."""
     value = calculate_final_value(site_id, period, traffic_type_api_format,
                                   minutes)
     LOG.debug('Percentage of departures delayed above threshold: ' +
