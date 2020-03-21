@@ -42,10 +42,10 @@ setup(
     include_package_data=True,
     keywords='check_sl_delay',
     name='check_sl_delay',
-    packages=find_packages(include=['check_sl_delay.py']),
+    packages=find_packages(include=['check_sl_delay.check_sl_delay.py']),
     #setup_requires=setup_requirements,
     test_suite='tests',
     #tests_require=test_requirements,
-    version='0.1.0-alpha.2',
+    version='0.1.0-alpha.4',
     zip_safe=False,
 )
