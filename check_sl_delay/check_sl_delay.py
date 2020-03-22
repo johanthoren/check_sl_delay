@@ -254,12 +254,12 @@ def cli(warning, critical, period, minutes, site_id, timeout, traffic_type):
     The site-id can be found using the API SL Platsuppslag:
         https://www.trafiklab.se/api/sl-platsuppslag/dokumentation
 
-    Example check command: check_sl_delay -p 10 -m 1 -i 1002 -T METRO -w 20 -c 30
+    Example: check_sl_delay -p 10 -m 1 -i 1002 -T METRO -w 20 -c 30
 
-    The above example will check the site 1002 (T-Centralen) for all METRO 
-    departures in the coming 10 minutes. It will warn if the percentage of 
-    departures that are more than 1 minute late is 20% or more of the total 
-    amount of departures for the time period. It will crit if the same 
+    The above example will check the site 1002 (T-Centralen) for all METRO
+    departures in the coming 10 minutes. It will warn if the percentage of
+    departures that are more than 1 minute late is 20% or more of the total
+    amount of departures for the time period. It will crit if the same
     percentage is 30% or more."""
     if critical and warning > critical:
         exit_plugin(4, ('--warning (' + str(warning) +
