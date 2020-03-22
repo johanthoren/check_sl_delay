@@ -58,13 +58,15 @@ Options:
                                   --minutes is greater or equal than this
                                   option. Must be greater than --warning.
 
+  -i, --site-id INTEGER RANGE     Site-id to check.  [required]
+  -m, --minutes INTEGER RANGE     Delay threshold, in minutes.  [required]
   -p, --period INTEGER            Time period to check, in minutes.
                                   [required]
 
-  -m, --minutes INTEGER RANGE     Delay threshold, in minutes.  [required]
-  -i, --site-id INTEGER           Site-id to check.  [required]
   -t, --timeout INTEGER RANGE     Plugin timeout, in seconds.
   -T, --traffic-type [BUS|METRO|TRAIN]
                                   Traffic type to check.  [required]
-  --help                          Show this message and exit
+  -v, --verbose                   Use 2 times for higher verbosity.
+  --version                       Show the version and exit.
+  --help                          Show this message and exit.
   ```

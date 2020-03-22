@@ -341,6 +341,7 @@ def determine_log_level(verbose):
               '--verbose',
               count=True,
               help='Use 2 times for higher verbosity.')
+@click.version_option()
 def cli(warning, critical, site_id, minutes, period, timeout, traffic_type,
         verbose):
     """check_sl_delay will connect to the SL API to determine the percentage of
