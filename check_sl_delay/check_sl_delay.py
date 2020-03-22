@@ -18,8 +18,6 @@ FORMATTER = logging.Formatter('%(message)s')
 STDOUT.setFormatter(FORMATTER)
 LOG.addHandler(STDOUT)
 
-API_KEY = '0f3031b9578149649068f90f7e499b35'
-
 
 def generate_perfdata_string(value='U', warning='', critical=''):
     """Generate a valid perfdata string based on `value`, `warning` and
@@ -31,6 +29,7 @@ def generate_perfdata_string(value='U', warning='', critical=''):
 
 def exit_plugin(state=3,
                 value='U',
+                name='',
                 warning='',
                 critical='',
                 minutes='',
@@ -49,16 +48,21 @@ def exit_plugin(state=3,
         LOG.warning(service_status + ': ' + error)
         sys.exit(state)
 
+    if name:
+        name_string = ('at ' + name + ' ')
+    else:
+        name_string = ''
+
     if minutes and minutes >= 2 or minutes == 0:
         LOG.debug(
             'Formatting value message for minutes in plural. (exit_plugin)')
-        value_message = ('% of the departures are delayed more than ' +
-                         str(minutes) + ' minutes')
+        value_message = ('% of the departures ' + name_string +
+                         'are delayed more than ' + str(minutes) + ' minutes')
     elif minutes:
         LOG.debug(
             'Formatting value message for minutes in singular. (exit_plugin)')
-        value_message = ('% of the departures are delayed more than ' +
-                         str(minutes) + ' minute')
+        value_message = ('% of the departures ' + name_string +
+                         'are delayed more than ' + str(minutes) + ' minute')
     else:
         value_message = ''
 
@@ -78,10 +82,51 @@ def exit_plugin(state=3,
     sys.exit(state)
 
 
+def fetch_site(site_id):
+    "Verify that the site_id is valid."
+    api_key = '76be1103a7cc4a458cbf807e814b0dd6'
+    url = ('https://api.sl.se/api2/typeahead.json/'
+           '?key=' + api_key + '&searchstring=' + str(site_id))
+    LOG.debug('URL: %s (fetch_site)', url)
+
+    try:
+        LOG.debug('Fetching API response for site %s. (fetch_site)', site_id)
+        response = requests.get(url)
+    except requests.exceptions.ConnectionError as exception_message:
+        exit_plugin(state=3,
+                    error='Encountered an exception during HTTP request: ' +
+                    str(exception_message))
+
+    try:
+        json_response = response.json()
+    except json.decoder.JSONDecodeError as exception_message:
+        exit_plugin(state=3,
+                    error='Encountered an exception during JSON Decoding: ' +
+                    str(exception_message))
+
+    try:
+        response_id = json_response['ResponseData'][0]['SiteId']
+        response_name = json_response['ResponseData'][0]['Name']
+        stripped_name = ' '.join(response_name.split())
+    except KeyError:
+        exit_plugin(state=3, error='Invalid site id: ' + str(site_id))
+    except IndexError:
+        exit_plugin(state=3, error='Invalid site id: ' + str(site_id))
+
+    if len(json_response['ResponseData']) > 1:
+        exit_plugin(state=3, error='Invalid site id: ' + str(site_id))
+
+    if response_id != site_id:
+        exit_plugin(state=3, error='Invalid site id: ' + str(site_id))
+
+    return stripped_name
+
+
 def fetch_response(site_id, time_window):
     "Method to fetch the API response."
+    api_key = '0f3031b9578149649068f90f7e499b35'
     url = ('https://api.sl.se/api2/realtimedeparturesV4.json/'
-           '?key=' + API_KEY + '&siteid=' + str(site_id) + '&timewindow=' +
+           '?key=' + api_key + '&siteid=' + str(site_id) + '&timewindow=' +
            str(time_window))
     LOG.debug('URL: %s (fetch_response)', url)
 
@@ -217,6 +262,8 @@ def plugin_main(site_id, period, traffic_type_api_format, minutes, warning,
                 critical):
     """Main function that will execute the actual API call function and
     determine the state based on the value returned."""
+    name = fetch_site(site_id)
+
     value = calculate_final_value(site_id, period, traffic_type_api_format,
                                   minutes)
     LOG.debug(
@@ -232,6 +279,7 @@ def plugin_main(site_id, period, traffic_type_api_format, minutes, warning,
 
     exit_plugin(state=state,
                 value=value,
+                name=name,
                 warning=warning,
                 critical=critical,
                 minutes=minutes)
@@ -267,7 +315,7 @@ def determine_log_level(verbose):
 @click.option('-i',
               '--site-id',
               required=True,
-              type=click.INT,
+              type=click.IntRange(1, ),
               help='Site-id to check.')
 @click.option('-m',
               '--minutes',
