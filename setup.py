@@ -53,6 +53,6 @@ setup(
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    version='0.1.0-beta.4',
+    version='0.1.0-beta.5',
     zip_safe=False,
 )

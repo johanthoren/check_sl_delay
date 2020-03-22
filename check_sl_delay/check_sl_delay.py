@@ -108,6 +108,7 @@ def fetch_site(site_id):
         response_id = json_response['ResponseData'][0]['SiteId']
         response_name = json_response['ResponseData'][0]['Name']
         stripped_name = ' '.join(response_name.split())
+
     except KeyError:
         exit_plugin(state=3, error='Invalid site id: ' + str(site_id))
     except IndexError:
@@ -116,7 +117,8 @@ def fetch_site(site_id):
     if len(json_response['ResponseData']) > 1:
         exit_plugin(state=3, error='Invalid site id: ' + str(site_id))
 
-    if response_id != site_id:
+    if str(response_id) != str(site_id):
+        LOG.debug('Response ID does not correspond to Site ID.')
         exit_plugin(state=3, error='Invalid site id: ' + str(site_id))
 
     return stripped_name
