@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """The setup script."""
 
 from setuptools import setup, find_packages
@@ -10,11 +9,19 @@ with open('README.md') as readme_file:
 with open('HISTORY.md') as history_file:
     HISTORY = history_file.read()
 
-requirements = ['requests>=2.23', 'Click>=7.1', 'func-timeout>=4.3', ]
+requirements = [
+    'requests>=2.23',
+    'Click>=7.1',
+    'func-timeout>=4.3',
+]
 
-setup_requirements = ['pytest-runner', ]
+setup_requirements = [
+    'pytest-runner',
+]
 
-test_requirements = ['pytest>=3', ]
+test_requirements = [
+    'pytest>=3',
+]
 
 setup(
     author="Johan Thorén",
@@ -46,6 +53,6 @@ setup(
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    version='0.1.0-beta.2',
+    version='0.1.0-beta.3',
     zip_safe=False,
 )

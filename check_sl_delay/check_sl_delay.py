@@ -10,7 +10,14 @@ import click
 from func_timeout import func_timeout, FunctionTimedOut
 import requests
 
-LOG = logging.getLogger(__name__)
+LOG = logging.getLogger()
+LOG.setLevel(logging.DEBUG)
+STDOUT = logging.StreamHandler(sys.stdout)
+STDOUT.setLevel(logging.DEBUG)
+FORMATTER = logging.Formatter('%(message)s')
+STDOUT.setFormatter(FORMATTER)
+LOG.addHandler(STDOUT)
+
 API_KEY = '0f3031b9578149649068f90f7e499b35'
 
 
@@ -35,35 +42,51 @@ def exit_plugin(state=3,
         2: 'CRITICAL',
         3: 'UNKNOWN'
     }
+    LOG.debug('Deciding what service status to print. (exit_plugin)')
     service_status = service_status_options.get(state, 'ERROR')
 
     if service_status in ('ERROR', 'UNKNOWN'):
-        print(service_status + ': ' + error)
+        LOG.warning(service_status + ': ' + error)
         sys.exit(state)
 
     if minutes and minutes >= 2 or minutes == 0:
+        LOG.debug(
+            'Formatting value message for minutes in plural. (exit_plugin)')
         value_message = ('% of the departures are delayed more than ' +
                          str(minutes) + ' minutes')
     elif minutes:
+        LOG.debug(
+            'Formatting value message for minutes in singular. (exit_plugin)')
         value_message = ('% of the departures are delayed more than ' +
                          str(minutes) + ' minute')
     else:
         value_message = ''
 
-    exit_message = (service_status + ': ' + str(value) + value_message +
+    LOG.debug('Generating exit message and perfdata string. (exit_plugin)')
+    verbose_exit_message = (service_status + ': ' + str(value) +
+                            value_message +
+                            generate_perfdata_string(value, warning, critical))
+    exit_message = (service_status + ': ' + str(value) +
                     generate_perfdata_string(value, warning, critical))
-    print(exit_message)
+
+    log_level = LOG.getEffectiveLevel()
+    if log_level <= 20:
+        LOG.info(verbose_exit_message)
+    else:
+        LOG.warning(exit_message)
+
     sys.exit(state)
 
 
 def fetch_response(site_id, time_window):
     "Method to fetch the API response."
-    LOG.info('Fetching API response')
     url = ('https://api.sl.se/api2/realtimedeparturesV4.json/'
            '?key=' + API_KEY + '&siteid=' + str(site_id) + '&timewindow=' +
            str(time_window))
+    LOG.debug('URL: %s (fetch_response)', url)
 
     try:
+        LOG.debug('Fetching API response. (fetch_response)')
         response = requests.get(url)
     except requests.exceptions.ConnectionError as exception_message:
         exit_plugin(state=3,
@@ -99,7 +122,7 @@ def structure_departure(departure):
 
 def extract_departures(response, traffic_type):
     "Method to parse API response."
-    LOG.info('Parsing API response')
+    LOG.debug('Parsing API response. (extract_departures)')
     departures = []
     for departure in response['ResponseData'][traffic_type]:
         departures.append(structure_departure(departure))
@@ -108,7 +131,7 @@ def extract_departures(response, traffic_type):
 
 def calculate_delays(departures):
     "Method to extract all delays from the parsed data."
-    LOG.info('Extracting the delays from the parsed data')
+    LOG.debug('Extracting the delays from the parsed data. (calculate_delays)')
     delays = []
     for departure in departures:
         delays.append(departure['delay'])
@@ -132,6 +155,9 @@ def convert_minutes(diffs):
 def get_diffs(site_id, time_window, traffic_type):
     """Get the diffs between scheduled and expected departures and return them
     in whole minutes."""
+    LOG.debug(
+        'Calculating diff between expected and scheduled departures. (get_diffs)'
+    )
     diffs = calculate_delays(
         extract_departures(fetch_response(site_id, time_window), traffic_type))
     minutes = convert_minutes(diffs)
@@ -140,6 +166,8 @@ def get_diffs(site_id, time_window, traffic_type):
 
 def compare_to_threshold(diffs, threshold):
     "Compare the diffs to the threshold and return True for offenders."
+    LOG.debug('Comparing diffs to threshold: %s (compare_to_threshold)',
+              threshold)
     results = []
     for diff in diffs:
         results.append(int(diff) >= int(threshold))
@@ -167,6 +195,7 @@ def calculate_percentage_of_offenders(results):
 def calculate_final_value(site_id, time_window, traffic_type, threshold):
     """Calculate the final `value` based on the results from `get_diffs`
     using `calculate_percentage_of_offenders` and `compare_to_threshold`."""
+    LOG.debug('Calculating the final value. (calculate_final_value)')
     diffs = get_diffs(site_id, time_window, traffic_type)
     value = calculate_percentage_of_offenders(
         compare_to_threshold(diffs, threshold))
@@ -190,8 +219,9 @@ def plugin_main(site_id, period, traffic_type_api_format, minutes, warning,
     determine the state based on the value returned."""
     value = calculate_final_value(site_id, period, traffic_type_api_format,
                                   minutes)
-    LOG.debug('Percentage of departures delayed above threshold: ' +
-              str(value) + '%')
+    LOG.debug(
+        'Percentage of departures delayed above threshold: %s (plugin_main)',
+        str(value))
 
     state = determine_state(value, warning, critical)
 
@@ -205,6 +235,18 @@ def plugin_main(site_id, period, traffic_type_api_format, minutes, warning,
                 warning=warning,
                 critical=critical,
                 minutes=minutes)
+
+
+def determine_log_level(verbose):
+    """Determine the log level depending on the option -v, which count is passed
+    here as `verbose`."""
+    levels = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+    try:
+        new_level = levels[verbose]
+        return new_level
+    except KeyError:
+        exit_plugin(state=4,
+                    error='Verbosity level out of range. 0-2 available.')
 
 
 @click.command()
@@ -222,21 +264,21 @@ def plugin_main(site_id, period, traffic_type_api_format, minutes, warning,
     help=('Critical threshold (0-100), critical if the percentage ' +
           'of departures having delays above --minutes is greater ' +
           'or equal than this option. Must be greater than ' + '--warning.'))
-@click.option('-p',
-              '--period',
-              required=True,
-              type=click.INT,
-              help='Time period to check, in minutes.')
-@click.option('-m',
-              '--minutes',
-              required=True,
-              type=click.IntRange(0, ),
-              help='Delay threshold, in minutes.')
 @click.option('-i',
               '--site-id',
               required=True,
               type=click.INT,
               help='Site-id to check.')
+@click.option('-m',
+              '--minutes',
+              required=True,
+              type=click.IntRange(0, ),
+              help='Delay threshold, in minutes.')
+@click.option('-p',
+              '--period',
+              required=True,
+              type=click.INT,
+              help='Time period to check, in minutes.')
 @click.option('-t',
               '--timeout',
               default=10,
@@ -247,7 +289,12 @@ def plugin_main(site_id, period, traffic_type_api_format, minutes, warning,
               required=True,
               type=click.Choice(['BUS', 'METRO', 'TRAIN']),
               help='Traffic type to check.')
-def cli(warning, critical, period, minutes, site_id, timeout, traffic_type):
+@click.option('-v',
+              '--verbose',
+              count=True,
+              help='Use 2 times for higher verbosity.')
+def cli(warning, critical, site_id, minutes, period, timeout, traffic_type,
+        verbose):
     """check_sl_delay will connect to the SL API to determine the percentage of
     delayed departures for any given site-id.
 
@@ -261,15 +308,20 @@ def cli(warning, critical, period, minutes, site_id, timeout, traffic_type):
     departures that are more than 1 minute late is 20% or more of the total
     amount of departures for the time period. It will crit if the same
     percentage is 30% or more."""
+
+    verbosity = determine_log_level(verbose)
+    LOG.setLevel(verbosity)
+
     if critical and warning > critical:
         exit_plugin(4, ('--warning (' + str(warning) +
                         ') higher than --critical (' + str(critical) + ')'))
 
-    LOG.debug('Threshold: ' + str(minutes) + ' minutes')
+    LOG.debug('Variables:')
+    LOG.debug('Threshold = %s minutes', str(minutes))
     if warning:
-        LOG.debug('Warning: ' + str(warning) + '%')
+        LOG.debug('Warning = %s', str(warning))
     if critical:
-        LOG.debug('Critical: ' + str(critical) + '%')
+        LOG.debug('Critical = %s', str(critical))
 
     traffic_type_api_format_options = {
         'METRO': 'Metros',
