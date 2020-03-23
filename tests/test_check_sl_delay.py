@@ -512,3 +512,26 @@ def test_exit_plugin(state_var):
         check_sl_delay.exit_plugin(state=state_var)
     assert pytest_wrapped_e.type == SystemExit
     assert pytest_wrapped_e.value.code == state_var
+
+
+def test_invalid_site_id(script_runner):
+    """Test that the script returns the correct exit code and message on invalid
+    site id."""
+    ret = script_runner.run('check_sl_delay', '-i', '100', '-m', '1', '-p',
+                            '10', '-T', 'METRO', '-w', '10', '-c', '20')
+    assert ret.success
+    assert ret.stdout == 'UNKNOWN: Invalid site id: 100\n'
+    assert ret.stderr == ''
+
+
+def test_100_percent_ok(script_runner):
+    """Test that the script returns the correct exit code and message on 100%
+    delays without warning or critical defined."""
+    ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '0',
+                            '-p', '10', '-T', 'METRO')
+
+    assert ret.success
+    assert ret.stdout == ('OK: 100% of the departures at Centralen ' +
+                          '(Stockholm) are delayed more than 0 minutes' +
+                          '|\'Percentage delayed\'=100%;;\n')
+    assert ret.stderr == ''
