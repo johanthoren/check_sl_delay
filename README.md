@@ -5,7 +5,7 @@ check\_sl\_delay
 
 ## Introduction
 
-*check_sl_delay* is a simple Nagios plugins to check the percentage of late departures for any given site.
+*check_sl_delay* is a simple Nagios plugins to check the percentage of late departures for any given site operated by SL (Stockholms Länstrafik).
 
 ## Installation
 
@@ -24,6 +24,12 @@ This will put the executable *check_sl_delay* in ~/.local/bin/, so make sure tha
 ```
 
 This will put the executable *check_sl_delay* in /usr/local/bin/, which is usually already part of the system wide $PATH. Check the documentation of your specific OS.
+
+Wherever your executable file has been placed, you may symlink it to a place where plugins are generally available in your environment, for example `/opt/plugins/`:
+
+```bash
+# ln -s /usr/local/bin/check_sl_delay /opt/plugins/check_sl_delay
+```
 
 ## Usage
 
@@ -70,3 +76,7 @@ Options:
   --version                       Show the version and exit.
   --help                          Show this message and exit.
   ```
+
+## Known Limitations
+
+Due to a limitation in *click* the locale must be unicode and not ascii. For more information [see this page](http://click.palletsprojects.com/en/5.x/python3/#python-3-surrogate-handling "Python 3 Surrogate Handling in Click").

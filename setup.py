@@ -29,7 +29,7 @@ setup(
     author_email='johan@thoren.xyz',
     python_requires='>=3.6',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: ISC License (ISCL)',
         'Natural Language :: English',
@@ -54,6 +54,6 @@ setup(
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    version='0.1.0-beta.6',
+    version='0.1.0',
     zip_safe=False,
 )
