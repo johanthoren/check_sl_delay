@@ -514,6 +514,7 @@ def test_exit_plugin(state_var):
     assert pytest_wrapped_e.value.code == state_var
 
 
+@pytest.mark.script_launch_mode('subprocess')
 def test_invalid_site_id(script_runner):
     """Test that the script returns the correct exit code and message on invalid
     site id."""
@@ -524,6 +525,7 @@ def test_invalid_site_id(script_runner):
     assert ret.stderr == ''
 
 
+@pytest.mark.script_launch_mode('subprocess')
 def test_100_percent_ok(script_runner):
     """Test that the script returns the correct exit code and message on 100%
     delays without warning or critical defined."""
