@@ -646,3 +646,21 @@ def test_warning_higher_than_critical(script_runner):
     assert ret.stdout == 'ERROR: --warning (20) higher than --critical (10)\n'
     assert ret.stderr == ''
     assert ret.returncode == 4
+
+
+@pytest.mark.script_launch_mode('subprocess')
+def test_help_options(script_runner):
+    "Test that both -h and --help shows the help."
+    short_ret = script_runner.run('check_sl_delay', '-h')
+    long_ret = script_runner.run('check_sl_delay', '--help')
+
+    assert short_ret.success
+    assert long_ret.success
+    assert short_ret.stdout.startswith('Usage: check_sl_delay [OPTIONS]\n')
+    assert long_ret.stdout.startswith('Usage: check_sl_delay [OPTIONS]\n')
+    assert short_ret.stdout.endswith('Show this message and exit.\n')
+    assert long_ret.stdout.endswith('Show this message and exit.\n')
+    assert short_ret.stderr == ''
+    assert long_ret.stderr == ''
+    assert short_ret.returncode == 0
+    assert long_ret.returncode == 0

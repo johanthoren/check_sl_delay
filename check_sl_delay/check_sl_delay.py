@@ -404,7 +404,7 @@ def plugin_main(site_id,
                 verbosity=verbosity)
 
 
-@click.command()
+@click.command(context_settings=dict(help_option_names=['-h', '--help']))
 @click.option(
     '-w',
     '--warning',
