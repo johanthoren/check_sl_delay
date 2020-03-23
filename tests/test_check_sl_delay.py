@@ -5,6 +5,7 @@
 from datetime import datetime
 import json
 import pytest
+import click
 
 from check_sl_delay import check_sl_delay
 
@@ -494,13 +495,16 @@ def test_generate_perfdata_string():
     "Thest that proper perfdata strings are generated."
     func = check_sl_delay.generate_perfdata_string
 
+    assert func(5, 0, 10) == '|\'Percentage delayed\'=5%;0;10'
+    assert func(5, 10, 0) == '|\'Percentage delayed\'=5%;10;0'
+    assert func(0, 10, 0) == '|\'Percentage delayed\'=0%;10;0'
     assert func(5, 10, 20) == '|\'Percentage delayed\'=5%;10;20'
     assert func(5, 10) == '|\'Percentage delayed\'=5%;10;'
     assert func(5) == '|\'Percentage delayed\'=5%;;'
     assert func() == '|\'Percentage delayed\'=U%;;'
 
 
-@pytest.fixture(params=[0, 1, 2, 3, 4])
+@pytest.fixture(params=['0', '1', '2', '3', '4'])
 def state_var(request):
     "Range of states for testing purposes."
     return request.param
@@ -508,10 +512,16 @@ def state_var(request):
 
 def test_exit_plugin(state_var):
     "Test that `exit_plugin` does indeed exit with the correct code."
-    with pytest.raises(SystemExit) as pytest_wrapped_e:
+    with pytest.raises(click.ClickException) as pytest_wrapped_e:
         check_sl_delay.exit_plugin(state=state_var)
-    assert pytest_wrapped_e.type == SystemExit
-    assert pytest_wrapped_e.value.code == state_var
+    assert pytest_wrapped_e.type == click.ClickException
+    assert pytest_wrapped_e.value.message == state_var
+
+
+def test_determine_state():
+    "Test that the correct state is determined."
+    func = check_sl_delay.determine_state
+    assert func(0, warning=0) == 1
 
 
 @pytest.mark.script_launch_mode('subprocess')
@@ -519,8 +529,9 @@ def test_invalid_site_id(script_runner):
     """Test that the script returns the correct exit code and message on invalid
     site id."""
     ret = script_runner.run('check_sl_delay', '-i', '100', '-m', '1', '-p',
-                            '10', '-T', 'METRO', '-w', '10', '-c', '20')
-    assert ret.success
+                            '10', '-T', 'METRO', '-w', '10', '-c', '20', '-t',
+                            '30')
+    assert not ret.success
     assert ret.stdout == 'UNKNOWN: Invalid site id: 100\n'
     assert ret.stderr == ''
     assert ret.returncode == 3
@@ -531,7 +542,7 @@ def test_100_percent_ok(script_runner):
     """Test that the script returns the correct exit code and message on 100%
     delays without warning or critical defined."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '0',
-                            '-p', '10', '-T', 'METRO')
+                            '-p', '10', '-T', 'METRO', '-t', '30')
 
     assert ret.success
     assert ret.stdout == ('OK: 100% of the departures at Centralen ' +
@@ -546,9 +557,9 @@ def test_100_percent_warn(script_runner):
     """Test that the script returns the correct exit code and message on 100%
     delays with warning but no critical defined."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '0',
-                            '-p', '10', '-T', 'METRO', '-w', '1')
+                            '-p', '10', '-T', 'METRO', '-w', '1', '-t', '30')
 
-    assert ret.success
+    assert not ret.success
     assert ret.stdout == ('WARNING: 100% of the departures at Centralen ' +
                           '(Stockholm) are delayed more than 0 minutes' +
                           '|\'Percentage delayed\'=100%;1;\n')
@@ -561,11 +572,77 @@ def test_100_percent_crit(script_runner):
     """Test that the script returns the correct exit code and message on 100%
     delays with critical but no warning defined."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '0',
-                            '-p', '10', '-T', 'METRO', '-c', '1')
+                            '-p', '10', '-T', 'METRO', '-c', '1', '-t', '30')
 
-    assert ret.success
+    assert not ret.success
     assert ret.stdout == ('CRITICAL: 100% of the departures at Centralen ' +
                           '(Stockholm) are delayed more than 0 minutes' +
                           '|\'Percentage delayed\'=100%;;1\n')
     assert ret.stderr == ''
     assert ret.returncode == 2
+
+
+@pytest.mark.script_launch_mode('subprocess')
+def test_wildcard_ok(script_runner):
+    """Test that the beginning, the end and the exit code is correct for a general
+    query where critical is set to 100."""
+    ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '20',
+                            '-p', '10', '-T', 'METRO', '-c', '100', '-t', '30')
+
+    assert ret.success
+    assert ret.stdout.startswith('OK: ')
+    assert ret.stdout.endswith(';;100\n')
+    assert ret.stderr == ''
+    assert ret.returncode == 0
+
+
+@pytest.mark.script_launch_mode('subprocess')
+def test_wildcard_warn(script_runner):
+    """Test that the beginning, the end and the exit code is correct for a general
+    query where warn is set to 0."""
+    ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
+                            '-p', '10', '-T', 'METRO', '-w', '0', '-t', '30')
+
+    assert not ret.success
+    assert ret.stdout.startswith('WARNING: ')
+    assert ret.stdout.endswith(';0;\n')
+    assert ret.stderr == ''
+    assert ret.returncode == 1
+
+
+@pytest.mark.script_launch_mode('subprocess')
+def test_wildcard_crit(script_runner):
+    """Test that the beginning, the end and the exit code is correct for a general
+    query where crit is set to 0."""
+    ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
+                            '-p', '10', '-T', 'METRO', '-c', '0', '-t', '30')
+
+    assert not ret.success
+    assert ret.stdout.startswith('CRITICAL: ')
+    assert ret.stdout.endswith(';;0\n')
+    assert ret.stderr == ''
+    assert ret.returncode == 2
+
+
+@pytest.mark.script_launch_mode('subprocess')
+def test_timeout(script_runner):
+    "Test that the script fails with timeout when timeout is set to 0."
+    ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
+                            '-p', '10', '-T', 'METRO', '-c', '0', '-t', '0')
+
+    assert not ret.success
+    assert ret.stdout.startswith('UNKNOWN: ')
+    assert ret.stderr == ''
+    assert ret.returncode == 3
+
+
+@pytest.mark.script_launch_mode('subprocess')
+def test_warning_higher_than_critical(script_runner):
+    "Test that the script fails when warning is higher than critical."
+    ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
+                            '-p', '10', '-T', 'METRO', '-c', '10', '-w', '20')
+
+    assert not ret.success
+    assert ret.stdout == 'ERROR: --warning (20) higher than --critical (10)\n'
+    assert ret.stderr == ''
+    assert ret.returncode == 4
