@@ -74,7 +74,7 @@ Options:
                                   Traffic type to check.  [required]
   -v, --verbose                   Use 2 times for higher verbosity.
   --version                       Show the version and exit.
-  --help                          Show this message and exit.
+  -h, --help                      Show this message and exit.
   ```
 
 ## Known Limitations
