@@ -523,6 +523,7 @@ def test_invalid_site_id(script_runner):
     assert ret.success
     assert ret.stdout == 'UNKNOWN: Invalid site id: 100\n'
     assert ret.stderr == ''
+    assert ret.returncode == 3
 
 
 @pytest.mark.script_launch_mode('subprocess')
@@ -537,3 +538,34 @@ def test_100_percent_ok(script_runner):
                           '(Stockholm) are delayed more than 0 minutes' +
                           '|\'Percentage delayed\'=100%;;\n')
     assert ret.stderr == ''
+    assert ret.returncode == 0
+
+
+@pytest.mark.script_launch_mode('subprocess')
+def test_100_percent_warn(script_runner):
+    """Test that the script returns the correct exit code and message on 100%
+    delays with warning but no critical defined."""
+    ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '0',
+                            '-p', '10', '-T', 'METRO', '-w', '1')
+
+    assert ret.success
+    assert ret.stdout == ('WARNING: 100% of the departures at Centralen ' +
+                          '(Stockholm) are delayed more than 0 minutes' +
+                          '|\'Percentage delayed\'=100%;1;\n')
+    assert ret.stderr == ''
+    assert ret.returncode == 1
+
+
+@pytest.mark.script_launch_mode('subprocess')
+def test_100_percent_crit(script_runner):
+    """Test that the script returns the correct exit code and message on 100%
+    delays with critical but no warning defined."""
+    ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '0',
+                            '-p', '10', '-T', 'METRO', '-c', '1')
+
+    assert ret.success
+    assert ret.stdout == ('CRITICAL: 100% of the departures at Centralen ' +
+                          '(Stockholm) are delayed more than 0 minutes' +
+                          '|\'Percentage delayed\'=100%;;1\n')
+    assert ret.stderr == ''
+    assert ret.returncode == 2
