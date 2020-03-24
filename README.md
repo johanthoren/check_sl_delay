@@ -80,3 +80,4 @@ Options:
 ## Known Limitations
 
 Due to a limitation in *click* the locale must be unicode and not ascii. For more information [see this page](http://click.palletsprojects.com/en/5.x/python3/#python-3-surrogate-handling "Python 3 Surrogate Handling in Click").
+
