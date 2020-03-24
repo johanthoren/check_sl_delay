@@ -10,8 +10,10 @@ from func_timeout import func_timeout, FunctionTimedOut
 import requests
 
 
-def maybe_output(print_on_levels=[0], actual_level=0, msg=''):
+def maybe_output(print_on_levels=None, actual_level=0, msg=''):
     "Determine wether or not to print output to stdout based on verbosity."
+    if print_on_levels is None:
+        print_on_levels = []
     if msg and actual_level in print_on_levels:
         click.echo(msg)
 
@@ -66,8 +68,8 @@ def exit_plugin(state=3,
     else:
         name_string = ''
 
-    # Make sure that we give the message with the correct wording, either plural
-    # or singular.
+    # Make sure that we give the message with the correct wording, either
+    # plural or singular.
     if isinstance(minutes, int) and minutes >= 2 or minutes == 0:
         # Output for -vv:
         maybe_output(
@@ -79,11 +81,10 @@ def exit_plugin(state=3,
                          'are delayed more than ' + str(minutes) + ' minutes')
     elif isinstance(minutes, int):
         # Output for -vv:
-        maybe_output(
-            print_on_levels=[2],
-            actual_level=verbosity,
-            msg=
-            'Formatting value message for minutes in singular. (exit_plugin)')
+        maybe_output(print_on_levels=[2],
+                     actual_level=verbosity,
+                     msg=('Formatting value message for minutes in singular.' +
+                          '(exit_plugin)'))
         value_message = ('% of the departures ' + name_string +
                          'are delayed more than ' + str(minutes) + ' minute')
     else:
@@ -293,9 +294,8 @@ def get_diffs(site_id, time_window, traffic_type, verbosity=0):
     maybe_output(
         print_on_levels=[2],
         actual_level=verbosity,
-        msg=
-        'Calculating diff between expected and scheduled departures. (get_diffs)'
-    )
+        msg=('Calculating diff between expected and scheduled departures.' +
+             '(get_diffs)'))
     # This higher order function calls on the various functions to get to work.
     diffs = calculate_delays(
         extract_departures(fetch_response(site_id, time_window, verbosity),
