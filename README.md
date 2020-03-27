@@ -42,10 +42,14 @@ Usage: check_sl_delay [OPTIONS]
   check_sl_delay will connect to the SL API to determine the percentage of
   delayed departures for any given site-id.
 
-  The site-id can be found using the API SL Platsuppslag:
-  https://www.trafiklab.se/api/sl-platsuppslag/dokumentation
+  The site-id and the needed API key can be found using the API SL
+  Platsuppslag: https://www.trafiklab.se/api/sl-platsuppslag/dokumentation
 
-  Example: check_sl_delay -p 10 -m 1 -i 1002 -T METRO -w 20 -c 30
+  The departure-api-key can be found using the API SL Realtidsinformation 4:
+  https://www.trafiklab.se/api/sl-realtidsdokumentation-4/dokumentation
+
+  Example: check_sl_delay -a <site-api-key> -A <departure-api-key> -p 10
+  -m 1 -i 1002 -T METRO -w 20 -c 30
 
   The above example will check the site 1002 (T-Centralen) for all METRO
   departures in the coming 10 minutes. It will warn if the percentage of
@@ -54,6 +58,12 @@ Usage: check_sl_delay [OPTIONS]
   percentage is 30% or more.
 
 Options:
+  -a, --site-api-key TEXT         API key for 'SL Platsuppslag' (see
+                                  trafiklab.se)  [required]
+
+  -A, --departure-api-key TEXT    API key for 'SL Realtidsinformation 4' (see
+                                  trafiklab.se)  [required]
+
   -w, --warning INTEGER RANGE     Warning threshold (0-100), warning if the
                                   percentage of departures having delays above
                                   --minutes is greater or equal than this
@@ -75,7 +85,7 @@ Options:
   -v, --verbose                   Use 2 times for higher verbosity.
   --version                       Show the version and exit.
   -h, --help                      Show this message and exit.
-  ```
+```
 
 ## Known Limitations
 

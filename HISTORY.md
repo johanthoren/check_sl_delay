@@ -1,6 +1,10 @@
 History
 =======
 
+0.1.3 (2020-03-27)
+
+-   Added options for API key and removed personal key from dev files.
+
 0.1.2 (2020-03-24)
 
 -   Minor fixes.

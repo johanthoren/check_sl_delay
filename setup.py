@@ -26,6 +26,8 @@ TEST_REQUIREMENTS = [
     'pylint>=2.4',
     'pytest-flake8',
     'pytest-pylint',
+    'flaky',
+    'python-dotenv',
 ]
 
 setup(
@@ -58,6 +60,6 @@ setup(
     setup_requires=SETUP_REQUIREMENTS,
     test_suite='tests',
     tests_require=TEST_REQUIREMENTS,
-    version='0.1.2',
+    version='0.1.3',
     zip_safe=False,
 )
