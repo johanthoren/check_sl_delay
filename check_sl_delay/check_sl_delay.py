@@ -121,11 +121,10 @@ def exit_invalid_id(site_id):
     exit_plugin(state=3, error='Invalid site id: ' + str(site_id))
 
 
-def fetch_site(site_id, verbosity=0):
+def fetch_site(site_api_key, site_id, verbosity=0):
     "Verify that the site_id is valid and return the `name` of the site."
-    api_key = '76be1103a7cc4a458cbf807e814b0dd6'
     url = ('https://api.sl.se/api2/typeahead.json/'
-           '?key=' + api_key + '&searchstring=' + str(site_id))
+           '?key=' + site_api_key + '&searchstring=' + str(site_id))
     # Output for -vv:
     maybe_output(print_on_levels=[2],
                  actual_level=verbosity,
@@ -183,12 +182,11 @@ def fetch_site(site_id, verbosity=0):
     return stripped_name
 
 
-def fetch_response(site_id, time_window, verbosity=0):
+def fetch_response(departure_api_key, site_id, time_window, verbosity=0):
     "Method to fetch the API response."
-    api_key = '0f3031b9578149649068f90f7e499b35'
     url = ('https://api.sl.se/api2/realtimedeparturesV4.json/'
-           '?key=' + api_key + '&siteid=' + str(site_id) + '&timewindow=' +
-           str(time_window))
+           '?key=' + departure_api_key + '&siteid=' + str(site_id) +
+           '&timewindow=' + str(time_window))
     # Output for -vv:
     maybe_output(print_on_levels=[2],
                  actual_level=verbosity,
@@ -287,7 +285,11 @@ def convert_minutes(diffs):
     return minutes
 
 
-def get_diffs(site_id, time_window, traffic_type, verbosity=0):
+def get_diffs(departure_api_key,
+              site_id,
+              time_window,
+              traffic_type,
+              verbosity=0):
     """Get the diffs between scheduled and expected departures and return them
     in whole minutes."""
     # Output for -vv:
@@ -298,8 +300,9 @@ def get_diffs(site_id, time_window, traffic_type, verbosity=0):
              '(get_diffs)'))
     # This higher order function calls on the various functions to get to work.
     diffs = calculate_delays(
-        extract_departures(fetch_response(site_id, time_window, verbosity),
-                           traffic_type, verbosity), verbosity)
+        extract_departures(
+            fetch_response(departure_api_key, site_id, time_window, verbosity),
+            traffic_type, verbosity), verbosity)
     minutes = convert_minutes(diffs)
     return minutes
 
@@ -337,7 +340,8 @@ def calculate_percentage_of_offenders(results):
     return percentage
 
 
-def calculate_final_value(site_id,
+def calculate_final_value(departure_api_key,
+                          site_id,
                           time_window,
                           traffic_type,
                           threshold,
@@ -348,7 +352,8 @@ def calculate_final_value(site_id,
     maybe_output(print_on_levels=[2],
                  actual_level=verbosity,
                  msg='Calculating the final value. (calculate_final_value)')
-    diffs = get_diffs(site_id, time_window, traffic_type, verbosity)
+    diffs = get_diffs(departure_api_key, site_id, time_window, traffic_type,
+                      verbosity)
     value = calculate_percentage_of_offenders(
         compare_to_threshold(diffs, threshold, verbosity))
     return value
@@ -365,7 +370,9 @@ def determine_state(value, warning='', critical=''):
     return 0
 
 
-def plugin_main(site_id,
+def plugin_main(site_api_key,
+                departure_api_key,
+                site_id,
                 period,
                 traffic_type_api_format,
                 minutes,
@@ -378,10 +385,10 @@ def plugin_main(site_id,
     maybe_output(print_on_levels=[2],
                  actual_level=verbosity,
                  msg="Enter the function `plugin_main`.")
-    name = fetch_site(site_id, verbosity)
+    name = fetch_site(site_api_key, site_id, verbosity)
 
-    value = calculate_final_value(site_id, period, traffic_type_api_format,
-                                  minutes, verbosity)
+    value = calculate_final_value(departure_api_key, site_id, period,
+                                  traffic_type_api_format, minutes, verbosity)
     # Output for -vv:
     maybe_output(print_on_levels=[2],
                  actual_level=verbosity,
@@ -405,6 +412,17 @@ def plugin_main(site_id,
 
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
+@click.option('-a',
+              '--site-api-key',
+              type=click.STRING,
+              required=True,
+              help='API key for \'SL Platsuppslag\' (see trafiklab.se)')
+@click.option(
+    '-A',
+    '--departure-api-key',
+    type=click.STRING,
+    required=True,
+    help='API key for \'SL Realtidsinformation 4\' (see trafiklab.se)')
 @click.option(
     '-w',
     '--warning',
@@ -449,15 +467,19 @@ def plugin_main(site_id,
               count=True,
               help='Use 2 times for higher verbosity.')
 @click.version_option()
-def cli(warning, critical, site_id, minutes, period, timeout, traffic_type,
-        verbose):
+def cli(site_api_key, departure_api_key, warning, critical, site_id, minutes,
+        period, timeout, traffic_type, verbose):
     """check_sl_delay will connect to the SL API to determine the percentage of
     delayed departures for any given site-id.
 
-    The site-id can be found using the API SL Platsuppslag:
-        https://www.trafiklab.se/api/sl-platsuppslag/dokumentation
+    The site-id and the needed API key can be found using the API SL
+    Platsuppslag: https://www.trafiklab.se/api/sl-platsuppslag/dokumentation
 
-    Example: check_sl_delay -p 10 -m 1 -i 1002 -T METRO -w 20 -c 30
+    The departure-api-key can be found using the API SL Realtidsinformation 4:
+        https://www.trafiklab.se/api/sl-realtidsdokumentation-4/dokumentation
+
+    Example: check_sl_delay -a <site-api-key> -A <departure-api-key> -p 10 \
+             -m 1 -i 1002 -T METRO -w 20 -c 30
 
     The above example will check the site 1002 (T-Centralen) for all METRO
     departures in the coming 10 minutes. It will warn if the percentage of
@@ -507,10 +529,23 @@ def cli(warning, critical, site_id, minutes, period, timeout, traffic_type,
                 error=('--warning (' + str(warning) +
                        ') higher than --critical (' + str(critical) + ')'))
 
+        # Validation of API keys needs to be inside the try clause to
+        # correctly exit.
+        if not len(site_api_key) == 32:
+            exit_plugin(
+                4,
+                error=('--site-api-key must be a 32 characters long string.'))
+
+        if not len(departure_api_key) == 32:
+            exit_plugin(4,
+                        error=('--departure-api-key must be a' +
+                               ' 32 characters long string.'))
+
         func_timeout(timeout,
                      plugin_main,
-                     args=(site_id, period, traffic_type_api_format, minutes,
-                           warning, critical, verbose))
+                     args=(site_api_key, departure_api_key, site_id, period,
+                           traffic_type_api_format, minutes, warning, critical,
+                           verbose))
 
     # This is the common exit point for most cases not related to input
     # validation or timeouts:

@@ -19,6 +19,7 @@ pytest-pylint = "*"
 yapf = "*"
 importmagic = "*"
 flaky = "*"
+python-dotenv = "*"
 
 [requires]
 python_version = "3.6"

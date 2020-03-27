@@ -4,11 +4,18 @@
 
 from datetime import datetime
 import json
+import os
 import pytest
 import click
+
+from dotenv import load_dotenv
 from flaky import flaky
 
 from check_sl_delay import check_sl_delay
+
+load_dotenv()
+SITE_API_KEY = os.getenv('SITE_API_KEY')
+DEPARTURE_API_KEY = os.getenv('DEPARTURE_API_KEY')
 
 
 @pytest.fixture
@@ -531,8 +538,8 @@ def test_invalid_site_id(script_runner):
     """Test that the script returns the correct exit code and message on invalid
     site id."""
     ret = script_runner.run('check_sl_delay', '-i', '100', '-m', '1', '-p',
-                            '10', '-T', 'METRO', '-w', '10', '-c', '20', '-t',
-                            '5')
+                            '10', '-a', SITE_API_KEY, '-A', DEPARTURE_API_KEY,
+                            '-T', 'METRO', '-w', '10', '-c', '20', '-t', '5')
     assert not ret.success
     assert ret.stdout == 'UNKNOWN: Invalid site id: 100\n'
     assert ret.stderr == ''
@@ -545,7 +552,8 @@ def test_100_percent_ok(script_runner):
     """Test that the script returns the correct exit code and message on 100%
     delays without warning or critical defined."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '0',
-                            '-p', '10', '-T', 'METRO', '-t', '5')
+                            '-a', SITE_API_KEY, '-A', DEPARTURE_API_KEY, '-p',
+                            '10', '-T', 'METRO', '-t', '5')
 
     assert ret.success
     assert ret.stdout == ('OK: 100% of the departures at Centralen ' +
@@ -561,7 +569,8 @@ def test_100_percent_warn(script_runner):
     """Test that the script returns the correct exit code and message on 100%
     delays with warning but no critical defined."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '0',
-                            '-p', '10', '-T', 'METRO', '-w', '1', '-t', '5')
+                            '-a', SITE_API_KEY, '-A', DEPARTURE_API_KEY, '-p',
+                            '10', '-T', 'METRO', '-w', '1', '-t', '5')
 
     assert not ret.success
     assert ret.stdout == ('WARNING: 100% of the departures at Centralen ' +
@@ -577,7 +586,8 @@ def test_100_percent_crit(script_runner):
     """Test that the script returns the correct exit code and message on 100%
     delays with critical but no warning defined."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '0',
-                            '-p', '10', '-T', 'METRO', '-c', '1', '-t', '5')
+                            '-a', SITE_API_KEY, '-A', DEPARTURE_API_KEY, '-p',
+                            '10', '-T', 'METRO', '-c', '1', '-t', '5')
 
     assert not ret.success
     assert ret.stdout == ('CRITICAL: 100% of the departures at Centralen ' +
@@ -593,7 +603,8 @@ def test_wildcard_ok(script_runner):
     """Test that the beginning, the end and the exit code is correct for a general
     query where critical is set to 100."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '20',
-                            '-p', '10', '-T', 'METRO', '-c', '100', '-t', '5')
+                            '-a', SITE_API_KEY, '-A', DEPARTURE_API_KEY, '-p',
+                            '10', '-T', 'METRO', '-c', '100', '-t', '5')
 
     assert ret.success
     assert ret.stdout.startswith('OK: ')
@@ -608,7 +619,8 @@ def test_wildcard_warn(script_runner):
     """Test that the beginning, the end and the exit code is correct for a general
     query where warn is set to 0."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
-                            '-p', '10', '-T', 'METRO', '-w', '0', '-t', '5')
+                            '-a', SITE_API_KEY, '-A', DEPARTURE_API_KEY, '-p',
+                            '10', '-T', 'METRO', '-w', '0', '-t', '5')
 
     assert not ret.success
     assert ret.stdout.startswith('WARNING: ')
@@ -623,7 +635,8 @@ def test_wildcard_crit(script_runner):
     """Test that the beginning, the end and the exit code is correct for a general
     query where crit is set to 0."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
-                            '-p', '10', '-T', 'METRO', '-c', '0', '-t', '5')
+                            '-a', SITE_API_KEY, '-A', DEPARTURE_API_KEY, '-p',
+                            '10', '-T', 'METRO', '-c', '0', '-t', '5')
 
     assert not ret.success
     assert ret.stdout.startswith('CRITICAL: ')
@@ -636,7 +649,8 @@ def test_wildcard_crit(script_runner):
 def test_timeout(script_runner):
     "Test that the script fails with timeout when timeout is set to 0."
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
-                            '-p', '10', '-T', 'METRO', '-c', '0', '-t', '0')
+                            '-a', SITE_API_KEY, '-A', DEPARTURE_API_KEY, '-p',
+                            '10', '-T', 'METRO', '-c', '0', '-t', '0')
 
     assert not ret.success
     assert ret.stdout.startswith('UNKNOWN: ')
@@ -648,10 +662,70 @@ def test_timeout(script_runner):
 def test_warning_higher_than_critical(script_runner):
     "Test that the script fails when warning is higher than critical."
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
-                            '-p', '10', '-T', 'METRO', '-c', '10', '-w', '20')
+                            '-p', '10', '-T', 'METRO', '-c', '10', '-w', '20',
+                            '-a', SITE_API_KEY, '-A', DEPARTURE_API_KEY)
 
     assert not ret.success
     assert ret.stdout == 'ERROR: --warning (20) higher than --critical (10)\n'
+    assert ret.stderr == ''
+    assert ret.returncode == 4
+
+
+@pytest.mark.script_launch_mode('subprocess')
+def test_long_site_api_key(script_runner):
+    "Test that the script fails when the site-api-key is too long."
+    ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
+                            '-p', '10', '-T', 'METRO', '-w', '10', '-c', '20',
+                            '-a', '1234567890123456789012345678901234567890',
+                            '-A', DEPARTURE_API_KEY)
+
+    assert not ret.success
+    assert ret.stdout.endswith(
+        '--site-api-key must be a 32 characters long string.\n')
+    assert ret.stderr == ''
+    assert ret.returncode == 4
+
+
+@pytest.mark.script_launch_mode('subprocess')
+def test_short_site_api_key(script_runner):
+    "Test that the script fails when the site-api-key is too short."
+    ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
+                            '-p', '10', '-T', 'METRO', '-w', '10', '-c', '20',
+                            '-a', '123', '-A', DEPARTURE_API_KEY)
+
+    assert not ret.success
+    assert ret.stdout.endswith(
+        '--site-api-key must be a 32 characters long string.\n')
+    assert ret.stderr == ''
+    assert ret.returncode == 4
+
+
+@pytest.mark.script_launch_mode('subprocess')
+def test_long_departure_api_key(script_runner):
+    "Test that the script fails when the departure-api-key is too long."
+    ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
+                            '-p', '10', '-T', 'METRO', '-w', '10', '-c', '20',
+                            '-A', '1234567890123456789012345678901234567890',
+                            '-a', SITE_API_KEY)
+
+    assert not ret.success
+    assert ret.stdout.endswith(
+        '--departure-api-key must be a 32 characters long string.\n')
+    assert ret.stderr == ''
+    assert ret.returncode == 4
+
+
+@pytest.mark.script_launch_mode('subprocess')
+def test_short_departure_api_key(script_runner):
+    "Test that the script fails when the departure-api-key is too short."
+    ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
+                            '-p', '10', '-T', 'METRO', '-w', '10', '-c', '20',
+                            '-A', '1234567890123456789012345678901234567890',
+                            '-a', SITE_API_KEY)
+
+    assert not ret.success
+    assert ret.stdout.endswith(
+        '--departure-api-key must be a 32 characters long string.\n')
     assert ret.stderr == ''
     assert ret.returncode == 4
 
