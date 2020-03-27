@@ -6,6 +6,7 @@ from datetime import datetime
 import json
 import pytest
 import click
+from flaky import flaky
 
 from check_sl_delay import check_sl_delay
 
@@ -524,25 +525,27 @@ def test_determine_state():
     assert func(0, warning=0) == 1
 
 
+@flaky
 @pytest.mark.script_launch_mode('subprocess')
 def test_invalid_site_id(script_runner):
     """Test that the script returns the correct exit code and message on invalid
     site id."""
     ret = script_runner.run('check_sl_delay', '-i', '100', '-m', '1', '-p',
                             '10', '-T', 'METRO', '-w', '10', '-c', '20', '-t',
-                            '30')
+                            '5')
     assert not ret.success
     assert ret.stdout == 'UNKNOWN: Invalid site id: 100\n'
     assert ret.stderr == ''
     assert ret.returncode == 3
 
 
+@flaky
 @pytest.mark.script_launch_mode('subprocess')
 def test_100_percent_ok(script_runner):
     """Test that the script returns the correct exit code and message on 100%
     delays without warning or critical defined."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '0',
-                            '-p', '10', '-T', 'METRO', '-t', '30')
+                            '-p', '10', '-T', 'METRO', '-t', '5')
 
     assert ret.success
     assert ret.stdout == ('OK: 100% of the departures at Centralen ' +
@@ -552,12 +555,13 @@ def test_100_percent_ok(script_runner):
     assert ret.returncode == 0
 
 
+@flaky
 @pytest.mark.script_launch_mode('subprocess')
 def test_100_percent_warn(script_runner):
     """Test that the script returns the correct exit code and message on 100%
     delays with warning but no critical defined."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '0',
-                            '-p', '10', '-T', 'METRO', '-w', '1', '-t', '30')
+                            '-p', '10', '-T', 'METRO', '-w', '1', '-t', '5')
 
     assert not ret.success
     assert ret.stdout == ('WARNING: 100% of the departures at Centralen ' +
@@ -567,12 +571,13 @@ def test_100_percent_warn(script_runner):
     assert ret.returncode == 1
 
 
+@flaky
 @pytest.mark.script_launch_mode('subprocess')
 def test_100_percent_crit(script_runner):
     """Test that the script returns the correct exit code and message on 100%
     delays with critical but no warning defined."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '0',
-                            '-p', '10', '-T', 'METRO', '-c', '1', '-t', '30')
+                            '-p', '10', '-T', 'METRO', '-c', '1', '-t', '5')
 
     assert not ret.success
     assert ret.stdout == ('CRITICAL: 100% of the departures at Centralen ' +
@@ -582,12 +587,13 @@ def test_100_percent_crit(script_runner):
     assert ret.returncode == 2
 
 
+@flaky
 @pytest.mark.script_launch_mode('subprocess')
 def test_wildcard_ok(script_runner):
     """Test that the beginning, the end and the exit code is correct for a general
     query where critical is set to 100."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '20',
-                            '-p', '10', '-T', 'METRO', '-c', '100', '-t', '30')
+                            '-p', '10', '-T', 'METRO', '-c', '100', '-t', '5')
 
     assert ret.success
     assert ret.stdout.startswith('OK: ')
@@ -596,12 +602,13 @@ def test_wildcard_ok(script_runner):
     assert ret.returncode == 0
 
 
+@flaky
 @pytest.mark.script_launch_mode('subprocess')
 def test_wildcard_warn(script_runner):
     """Test that the beginning, the end and the exit code is correct for a general
     query where warn is set to 0."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
-                            '-p', '10', '-T', 'METRO', '-w', '0', '-t', '30')
+                            '-p', '10', '-T', 'METRO', '-w', '0', '-t', '5')
 
     assert not ret.success
     assert ret.stdout.startswith('WARNING: ')
@@ -610,12 +617,13 @@ def test_wildcard_warn(script_runner):
     assert ret.returncode == 1
 
 
+@flaky
 @pytest.mark.script_launch_mode('subprocess')
 def test_wildcard_crit(script_runner):
     """Test that the beginning, the end and the exit code is correct for a general
     query where crit is set to 0."""
     ret = script_runner.run('check_sl_delay', '-v', '-i', '1002', '-m', '1',
-                            '-p', '10', '-T', 'METRO', '-c', '0', '-t', '30')
+                            '-p', '10', '-T', 'METRO', '-c', '0', '-t', '5')
 
     assert not ret.success
     assert ret.stdout.startswith('CRITICAL: ')

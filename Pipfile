@@ -18,6 +18,7 @@ pytest-flake8 = "*"
 pytest-pylint = "*"
 yapf = "*"
 importmagic = "*"
+flaky = "*"
 
 [requires]
 python_version = "3.6"
